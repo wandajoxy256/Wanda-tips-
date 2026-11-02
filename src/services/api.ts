@@ -1,17 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildPredictionResults } from './prediction';
-import { UserProfile, AuthResponse } from '../types';
+import { UserProfile } from '../types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
 
-async function request<T>(path: string, method: string = 'GET', body?: any, token?: string): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+export type AuthResponse = {
+  token: string;
+  user: UserProfile;
+};
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+async function request<T>(path: string, method = 'GET', body?: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${API_URL}${path}`, {
     method,
@@ -20,17 +20,16 @@ async function request<T>(path: string, method: string = 'GET', body?: any, toke
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Request failed');
+    const message = await response.text();
+    throw new Error(message || 'Request failed');
   }
 
-  return response.json() as Promise<T>;
+  return (await response.json()) as T;
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
   try {
-    const data = await request<AuthResponse>('/auth/login', 'POST', { email, password });
-    return data;
+    return await request<AuthResponse>('/auth/login', 'POST', { email, password });
   } catch (error) {
     return {
       token: 'demo-token',
@@ -48,13 +47,12 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
 export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
   try {
-    const data = await request<AuthResponse>('/auth/register', 'POST', { name, email, password });
-    return data;
+    return await request<AuthResponse>('/auth/register', 'POST', { name, email, password });
   } catch (error) {
     return {
       token: 'demo-token',
       user: {
-        id: 'demo-user-created',
+        id: `user-${Date.now()}`,
         name,
         email,
         plan: 'Pro',
@@ -68,19 +66,20 @@ export async function registerUser(name: string, email: string, password: string
 export async function fetchLeagueFixtures(league: string, token?: string) {
   try {
     const data = await request<{ matches?: any[] }>('/sports/fixtures', 'POST', { league }, token);
-    if (Array.isArray(data.matches) && data.matches.length) {
+    if (Array.isArray(data.matches) && data.matches.length > 0) {
       return data.matches.map((match: any) => ({
+        id: `${match.homeTeam ?? 'home'}-${match.awayTeam ?? 'away'}`,
         league,
         fixture: `${match.homeTeam ?? 'Home'} vs ${match.awayTeam ?? 'Away'}`,
         pick: match.bestPick ?? 'Home Win (1)',
-        stakePercent: match.stakePercent ?? 2.5,
+        stakePercent: match.stakePercent ?? 2.4,
         stakeAmount: match.stakeAmount ?? 25,
-        confidence: match.confidence ?? 72.5,
+        confidence: match.confidence ?? 72,
         details: match.details ?? 'Value market detected',
       }));
     }
   } catch (error) {
-    // fallback to local prediction engine when no real backend is configured
+    // Ignore and fall back to local model when no API is configured.
   }
 
   return buildPredictionResults(1000, league);

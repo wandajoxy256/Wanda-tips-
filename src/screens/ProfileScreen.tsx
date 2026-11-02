@@ -1,20 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import { useAppContext } from '../context/AppContext';
 import { useNavigation } from '@react-navigation/native';
+import { useAppContext } from '../context/AppContext';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, bankroll, logout, updateProfile } = useAppContext();
 
+  const handleAddUnits = async () => {
+    if (!user) return;
+    await updateProfile({ bankroll: (user.bankroll || bankroll) + 100 });
+    Alert.alert('Profile updated', '100 units added to your bankroll.');
+  };
+
   const handleLogout = async () => {
     await logout();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-  };
-
-  const handleUpdateProfile = async () => {
-    await updateProfile({ bankroll: bankroll + 100 });
-    Alert.alert('Profile updated', 'Your bankroll has been increased by 100 units.');
   };
 
   return (
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
         <Text style={styles.value}>{user?.plan ?? 'Pro'}</Text>
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleUpdateProfile}>
+      <Pressable style={styles.primaryButton} onPress={handleAddUnits}>
         <Text style={styles.primaryButtonText}>Add 100 units</Text>
       </Pressable>
 
@@ -53,26 +54,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
   },
   title: {
+    color: '#00ffcc',
     fontSize: 30,
     fontWeight: '900',
-    textAlign: 'center',
-    color: '#00ffcc',
     letterSpacing: 2,
+    textAlign: 'center',
     marginBottom: 18,
   },
   card: {
     backgroundColor: '#1b1b1b',
+    borderRadius: 14,
     borderColor: '#2a2a2a',
     borderWidth: 1,
-    borderRadius: 14,
     padding: 18,
   },
   label: {
     color: '#00ffcc',
     fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
     fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     marginTop: 8,
     marginBottom: 4,
   },

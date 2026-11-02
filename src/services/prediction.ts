@@ -1,71 +1,45 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { PredictionResult } from '../types';
+import { MatchFixture, PredictionResult } from '../types';
 
-export const formatCurrency = (value: number) => `${value.toLocaleString()} units`;
+export const fixturesByLeague: Record<string, MatchFixture[]> = {
+  ALL: [
+    { home: 'Arsenal', away: 'Chelsea', o1: 2.1, o2: 3.2, over: 1.85, league: 'ALL' },
+    { home: 'Real Madrid', away: 'Barcelona', o1: 2.0, o2: 3.1, over: 1.8, league: 'ALL' },
+    { home: 'Juventus', away: 'Inter Milan', o1: 2.2, o2: 3.1, over: 1.9, league: 'ALL' },
+  ],
+  EPL: [
+    { home: 'Arsenal', away: 'Chelsea', o1: 2.1, o2: 3.2, over: 1.85, league: 'EPL' },
+    { home: 'Newcastle United', away: 'Everton FC', o1: 2.3, o2: 3.0, over: 1.75, league: 'EPL' },
+    { home: 'Liverpool', away: 'Manchester City', o1: 2.45, o2: 2.95, over: 1.9, league: 'EPL' },
+  ],
+  LaLiga: [
+    { home: 'Real Madrid', away: 'Barcelona', o1: 2.0, o2: 3.1, over: 1.8, league: 'LaLiga' },
+    { home: 'Atletico Madrid', away: 'Sevilla', o1: 1.95, o2: 3.3, over: 1.7, league: 'LaLiga' },
+  ],
+  SerieA: [
+    { home: 'Juventus', away: 'Inter Milan', o1: 2.2, o2: 3.1, over: 1.9, league: 'SerieA' },
+    { home: 'AC Milan', away: 'Napoli', o1: 2.1, o2: 3.0, over: 1.75, league: 'SerieA' },
+  ],
+};
 
-export const buildPredictionResults = (bankroll: number, selectedLeague: string) => {
-  const fixtures = {
-    ALL: [
-      { home: 'Arsenal', away: 'Chelsea', o1: 2.1, o2: 3.2, over: 1.85 },
-      { home: 'Real Madrid', away: 'Barcelona', o1: 2.0, o2: 3.1, over: 1.8 },
-      { home: 'Juventus', away: 'Inter Milan', o1: 2.2, o2: 3.1, over: 1.9 },
-    ],
-    EPL: [
-      { home: 'Arsenal', away: 'Chelsea', o1: 2.1, o2: 3.2, over: 1.85 },
-      { home: 'Newcastle United', away: 'Everton FC', o1: 2.3, o2: 3.0, over: 1.75 },
-    ],
-    LaLiga: [
-      { home: 'Real Madrid', away: 'Barcelona', o1: 2.0, o2: 3.1, over: 1.8 },
-      { home: 'Atletico Madrid', away: 'Sevilla', o1: 1.95, o2: 3.3, over: 1.7 },
-    ],
-    SerieA: [
-      { home: 'Juventus', away: 'Inter Milan', o1: 2.2, o2: 3.1, over: 1.9 },
-      { home: 'AC Milan', away: 'Napoli', o1: 2.1, o2: 3.0, over: 1.75 },
-    ],
-  };
+export function buildPredictionResults(bankroll: number, selectedLeague: string): PredictionResult[] {
+  const leagueKey = selectedLeague === 'ALL' ? 'ALL' : selectedLeague;
+  const fixtures = fixturesByLeague[leagueKey] ?? fixturesByLeague.ALL;
 
-  const target = selectedLeague === 'ALL' ? fixtures.ALL : fixtures[selectedLeague as keyof typeof fixtures] || fixtures.ALL;
-
-  return target.map((fixture) => {
-    const estimatedHomeWin = 0.38;
-    const estimatedAwayWin = 0.3;
+  return fixtures.map((fixture, index) => {
     const estimatedOver = 0.58;
-    const pick = estimatedOver > 0.5 ? 'Over 2.5 Goals' : 'Home Win (1)';
     const stakePercent = estimatedOver > 0.5 ? 2.4 : 1.8;
     const stakeAmount = bankroll * (stakePercent / 100);
+    const pick = estimatedOver > 0.5 ? 'Over 2.5 Goals' : 'Home Win (1)';
 
     return {
-      league: selectedLeague,
+      id: `${fixture.home}-${fixture.away}-${index}`,
+      league: fixture.league,
       fixture: `${fixture.home} vs ${fixture.away}`,
       pick,
       stakePercent,
       stakeAmount,
       confidence: estimatedOver > 0.5 ? 74.8 : 71.2,
       details: `Suggested stake: ${stakePercent.toFixed(1)}% / ${Math.round(stakeAmount).toLocaleString()} units`,
-    } as PredictionResult;
+    };
   });
-};
-
-export const theme = {
-  background: '#121212',
-  card: '#1a1a1a',
-  panel: '#181818',
-  green: '#00ffcc',
-  accent: '#00b33c',
-  blue: '#007acc',
-  white: '#ffffff',
-  muted: '#a1a1a1',
-};
-
-export default function DemoThemePreview() {
-  return (
-    <View style={{ backgroundColor: theme.background, padding: 16 }}>
-      <Text style={{ color: theme.green }}>Wanda Tips</Text>
-    </View>
-  );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-});

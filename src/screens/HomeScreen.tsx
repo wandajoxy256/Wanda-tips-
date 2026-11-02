@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { useAppContext } from '../context/AppContext';
 import { fetchLeagueFixtures } from '../services/api';
 import { buildPredictionResults } from '../services/prediction';
@@ -9,49 +9,50 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const runPrediction = async () => {
+    const run = async () => {
       try {
         setLoading(true);
         const fixtures = await fetchLeagueFixtures(selectedLeague, token ?? undefined);
-        const mapped = fixtures.length ? fixtures : buildPredictionResults(bankroll, selectedLeague);
-        await setResults(mapped);
+        await setResults(fixtures.length > 0 ? fixtures : buildPredictionResults(bankroll, selectedLeague));
       } catch (error) {
-        const fallback = buildPredictionResults(bankroll, selectedLeague);
-        await setResults(fallback);
+        await setResults(buildPredictionResults(bankroll, selectedLeague));
       } finally {
         setLoading(false);
       }
     };
 
-    runPrediction();
+    run();
   }, [bankroll, selectedLeague, token]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.greeting}>Hello, {user?.name ?? 'Coach'}</Text>
+      <Text style={styles.greeting}>Hello, {user?.name || 'Coach'}</Text>
       <Text style={styles.title}>WANDA TIPS</Text>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Bankroll</Text>
-        <Text style={styles.summaryValue}>{bankroll.toLocaleString()} units</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Bankroll</Text>
+        <Text style={styles.value}>{bankroll.toLocaleString()} units</Text>
       </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>League</Text>
-        <Text style={styles.summaryValue}>{selectedLeague}</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>League</Text>
+        <Text style={styles.value}>{selectedLeague}</Text>
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={() => Alert.alert('Scan run', `Feasible market scan ready for ${selectedLeague}`)}>
+      <Pressable
+        style={styles.primaryButton}
+        onPress={() => Alert.alert('Scan ready', `Feasible market scan ready for ${selectedLeague}`)}
+      >
         <Text style={styles.primaryButtonText}>{loading ? 'Scanning...' : 'Run Feasible Market Scan'}</Text>
       </Pressable>
 
-      <View style={styles.resultsCard}>
+      <View style={styles.infoCard}>
         <Text style={styles.cardTitle}>Top recommendations</Text>
         {results.length === 0 ? (
-          <Text style={styles.emptyText}>No picks yet. Click the scan button to generate recommendations.</Text>
+          <Text style={styles.emptyText}>No picks yet. Run a scan to generate results.</Text>
         ) : (
           results.slice(0, 3).map((item, index) => (
-            <View key={`${item.fixture}-${index}`} style={styles.pickRow}>
+            <View key={`${item.fixture}-${index}`} style={styles.pickBox}>
               <Text style={styles.fixtureText}>{item.fixture}</Text>
               <Text style={styles.pickText}>{item.pick}</Text>
               <Text style={styles.pickInfo}>{item.details}</Text>
@@ -65,24 +66,24 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 20,
     backgroundColor: '#121212',
-    minHeight: '100%',
   },
   greeting: {
-    color: '#d9d9d9',
+    color: '#d4d4d4',
     fontSize: 14,
     marginBottom: 6,
   },
   title: {
-    fontSize: 30,
+    color: '#00ffcc',
     fontWeight: '900',
     textAlign: 'center',
-    color: '#00ffcc',
+    fontSize: 30,
     letterSpacing: 2,
     marginBottom: 18,
   },
-  summaryCard: {
+  card: {
     backgroundColor: '#1a1a1a',
     borderColor: '#2a2a2a',
     borderWidth: 1,
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  summaryLabel: {
+  label: {
     color: '#7deed0',
     fontSize: 11,
     textTransform: 'uppercase',
@@ -98,16 +99,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 6,
   },
-  summaryValue: {
+  value: {
     color: '#fff',
-    fontWeight: '800',
     fontSize: 20,
+    fontWeight: '800',
   },
   primaryButton: {
     backgroundColor: '#00b33c',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
+    paddingVertical: 14,
     marginVertical: 16,
   },
   primaryButtonText: {
@@ -115,8 +116,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
   },
-  resultsCard: {
-    backgroundColor: '#191919',
+  infoCard: {
+    backgroundColor: '#1a1a1a',
     borderColor: '#2b2b2b',
     borderWidth: 1,
     borderRadius: 12,
@@ -125,16 +126,15 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: '#00ffcc',
     fontWeight: '800',
-    fontSize: 15,
-    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    marginBottom: 12,
   },
   emptyText: {
     color: '#d0d0d0',
     lineHeight: 22,
   },
-  pickRow: {
+  pickBox: {
     backgroundColor: '#232323',
     borderRadius: 10,
     padding: 12,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   pickInfo: {
-    color: '#d7d7d7',
+    color: '#d6d6d6',
     fontSize: 12,
   },
 });

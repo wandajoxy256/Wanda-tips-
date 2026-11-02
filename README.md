@@ -1,40 +1,47 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+# Wanda Tips Mobile
 
-export async function analyzeImageWithGemini(base64Image: string, mimeType: string, apiKey: string) {
-  const prompt = 'Analyze this football screenshot. Extract team names, odds, and provide a concise prediction summary. Return plain text.';
+A complete Expo mobile app starter for Wanda Tips built with React Native, navigation, auth flow, profile, prediction logic, and screenshot analysis integration.
 
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Image } },
-          ],
-        }],
-      }),
-    });
+## What is included
+- Login and signup screens
+- Auth persistence using secure storage
+- User profile screen
+- Bankroll tracking and league selection
+- Fixture prediction dashboard
+- Screenshot upload and Gemini AI analysis
+- Dark sports app styling
+- Real API-ready service layer with demo fallback
 
-    const data = await response.json();
+## Requirements
+- Node.js 18+
+- npm or yarn
+- Expo CLI
 
-    if (!response.ok) {
-      throw new Error(data?.error?.message || 'Gemini request failed');
-    }
+## Install
+npm install
 
-    const text = data?.candidates?.[0]?.content?.parts?.find((part: any) => part.text)?.text;
-    return text || 'Vision analysis completed successfully.';
-  } catch (error: any) {
-    throw new Error(error.message || 'Gemini analysis failed');
-  }
-}
+## Run the app
+npm start
 
-export default function GeminiPreview() {
-  return (
-    <View>
-      <Text>Gemini API</Text>
-    </View>
-  );
-}
+Then launch:
+- Android emulator: npm run android
+- iOS simulator: npm run ios
+
+## Environment variables
+Create a `.env` file if you plan to connect to a real backend or API:
+
+EXPO_PUBLIC_API_URL=https://your-api-url.com
+EXPO_PUBLIC_GEMINI_API_KEY=your_key_here
+
+## Notes
+- The app is ready as a productive starter foundation.
+- If you connect a real backend later, replace the demo auth and data placeholders in `src/services/api.ts`.
+- The AI screenshot scan will work once a valid Gemini API key is supplied.
+
+## Recommended next step for a real app
+Connect this app to:
+- Supabase for auth, profile, and app data
+- A football odds API for live fixtures and odds
+- A real backend for saving scans/history
+
+This gives you a solid product base without starting from scratch.

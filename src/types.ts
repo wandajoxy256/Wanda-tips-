@@ -2,17 +2,22 @@ export type UserProfile = {
   id: string;
   name: string;
   email: string;
-  plan?: string;
-  bankroll?: number;
-  favoriteLeague?: string;
+  plan: string;
+  favoriteLeague: string;
+  bankroll: number;
 };
 
-export type AuthResponse = {
-  token: string;
-  user: UserProfile;
+export type MatchFixture = {
+  home: string;
+  away: string;
+  o1: number;
+  o2: number;
+  over: number;
+  league: string;
 };
 
 export type PredictionResult = {
+  id: string;
   league: string;
   fixture: string;
   pick: string;

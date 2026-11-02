@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { UserProfile, PredictionResult } from '../types';
+import { PredictionResult, UserProfile } from '../types';
+
+const STORAGE_KEYS = {
+  bankroll: '@wanda:bankroll',
+  league: '@wanda:league',
+  apiKey: '@wanda:apiKey',
+  results: '@wanda:results',
+  user: '@wanda:user',
+  token: '@wanda:token',
+};
 
 type AppContextType = {
   isAuthenticated: boolean;
@@ -18,15 +27,6 @@ type AppContextType = {
   login: (user: UserProfile, token: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (payload: Partial<UserProfile>) => Promise<void>;
-};
-
-const STORAGE_KEYS = {
-  bankroll: '@wanda:bankroll',
-  league: '@wanda:league',
-  apiKey: '@wanda:apiKey',
-  results: '@wanda:results',
-  user: '@wanda:user',
-  token: '@wanda:token',
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -58,7 +58,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         if (storedToken) setToken(storedToken);
         if (storedUser) setUser(JSON.parse(storedUser) as UserProfile);
       } catch (error) {
-        console.warn('Unable to hydrate app state', error);
+        console.warn('Hydration failed', error);
       }
     };
 
@@ -86,27 +86,18 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.setItem(STORAGE_KEYS.results, JSON.stringify(value));
   };
 
-  const saveUser = async (nextUser: UserProfile | null) => {
-    setUser(nextUser);
-    if (nextUser) {
-      await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(nextUser));
-    } else {
-      await AsyncStorage.removeItem(STORAGE_KEYS.user);
-    }
-  };
-
   const login = async (nextUser: UserProfile, nextToken: string) => {
     setUser(nextUser);
     setToken(nextToken);
-    await SecureStore.setItemAsync(STORAGE_KEYS.token, nextToken);
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(nextUser));
+    await SecureStore.setItemAsync(STORAGE_KEYS.token, nextToken);
   };
 
   const logout = async () => {
-    setToken(null);
     setUser(null);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.token);
+    setToken(null);
     await AsyncStorage.removeItem(STORAGE_KEYS.user);
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.token);
   };
 
   const updateProfile = async (payload: Partial<UserProfile>) => {
@@ -141,8 +132,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAppContext = () => {
   const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within AppProvider');
-  }
+  if (!context) throw new Error('useAppContext must be used within AppProvider');
   return context;
 };

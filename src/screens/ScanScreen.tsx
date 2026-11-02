@@ -1,14 +1,5 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Alert,
-  TextInput,
-  Image,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppContext } from '../context/AppContext';
 import { analyzeImageWithGemini } from '../services/gemini';
@@ -33,12 +24,12 @@ export default function ScanScreen() {
 
   const handleAnalyze = async () => {
     if (!apiKey.trim()) {
-      Alert.alert('Missing API Key', 'Add your Gemini API key in the app first.');
+      Alert.alert('Missing API key', 'Paste your Gemini API key before analyzing a screenshot.');
       return;
     }
 
     if (!imageUri) {
-      Alert.alert('No image', 'Please select a screenshot before scanning.');
+      Alert.alert('No screenshot', 'Select an image before scanning.');
       return;
     }
 
@@ -56,7 +47,7 @@ export default function ScanScreen() {
 
       const text = await analyzeImageWithGemini(base64, blob.type || 'image/jpeg', apiKey.trim());
       setAnalysisText(text);
-      Alert.alert('Vision analysis complete', `Bankroll: ${bankroll.toLocaleString()} units`);
+      Alert.alert('AI analysis complete', `Bankroll: ${bankroll.toLocaleString()} units`);
     } catch (error: any) {
       Alert.alert('Analysis failed', error.message || 'Unable to process screenshot');
     } finally {
@@ -75,23 +66,21 @@ export default function ScanScreen() {
           value={apiKey}
           onChangeText={setApiKey}
           placeholder="Paste your Gemini API key"
-          placeholderTextColor="#6d6d6d"
+          placeholderTextColor="#6b6b6b"
           secureTextEntry
         />
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Screenshot</Text>
+        <Text style={styles.label}>Upload match screenshot</Text>
         <Pressable style={styles.primaryButton} onPress={pickImage}>
-          <Text style={styles.primaryButtonText}>Choose image</Text>
+          <Text style={styles.buttonText}>Choose image</Text>
         </Pressable>
 
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
-        ) : null}
+        {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" /> : null}
 
         <Pressable style={styles.secondaryButton} onPress={handleAnalyze} disabled={loading}>
-          <Text style={styles.primaryButtonText}>{loading ? 'Analyzing...' : 'Scan screenshot'}</Text>
+          <Text style={styles.buttonText}>{loading ? 'Analyzing...' : 'Scan screenshot with AI'}</Text>
         </Pressable>
       </View>
 
@@ -106,24 +95,24 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 20,
     backgroundColor: '#121212',
-    minHeight: '100%',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
-    textAlign: 'center',
     color: '#00ffcc',
+    fontWeight: '900',
+    fontSize: 28,
+    textAlign: 'center',
     letterSpacing: 2,
     marginBottom: 18,
   },
   card: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#1b1b1b',
     borderRadius: 14,
-    padding: 16,
     borderColor: '#2a2a2a',
     borderWidth: 1,
+    padding: 16,
     marginBottom: 16,
   },
   label: {
@@ -136,8 +125,8 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#262626',
-    borderWidth: 1,
     borderColor: '#333',
+    borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -146,18 +135,18 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: '#007acc',
     borderRadius: 10,
-    paddingVertical: 12,
     alignItems: 'center',
+    paddingVertical: 12,
     marginTop: 12,
   },
   secondaryButton: {
     backgroundColor: '#00b33c',
     borderRadius: 10,
-    paddingVertical: 12,
     alignItems: 'center',
+    paddingVertical: 12,
     marginTop: 12,
   },
-  primaryButtonText: {
+  buttonText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
@@ -167,14 +156,14 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 12,
     marginTop: 14,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#171717',
   },
   analysisBox: {
-    backgroundColor: '#181818',
     borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
+    backgroundColor: '#181818',
     borderColor: '#2a2a2a',
+    borderWidth: 1,
+    padding: 12,
   },
   analysisText: {
     color: '#00ff66',

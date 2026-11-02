@@ -7,7 +7,7 @@ export default function ResultsScreen() {
   const { results, bankroll } = useAppContext();
 
   useEffect(() => {
-    console.log('Results screen loaded with', results.length, 'items');
+    console.log('Results screen loaded');
   }, [results]);
 
   return (
@@ -21,21 +21,21 @@ export default function ResultsScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 20,
     backgroundColor: '#121212',
-    minHeight: '100%',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
     color: '#00ffcc',
+    fontWeight: '900',
+    fontSize: 28,
     textAlign: 'center',
-    marginBottom: 8,
     letterSpacing: 2,
+    marginBottom: 8,
   },
   subtitle: {
-    color: '#d7d7d7',
     textAlign: 'center',
+    color: '#d7d7d7',
     marginBottom: 16,
     fontSize: 14,
   },

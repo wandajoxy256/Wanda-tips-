@@ -1,8 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAppContext } from './src/context/AppContext';
 import LoginScreen from './src/screens/LoginScreen';
@@ -11,6 +9,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -24,21 +24,21 @@ function MainTabs() {
           backgroundColor: '#181818',
           borderTopColor: '#2a2a2a',
           borderTopWidth: 1,
+          height: 72,
           paddingBottom: 8,
           paddingTop: 8,
-          height: 72,
         },
         tabBarActiveTintColor: '#00ffcc',
-        tabBarInactiveTintColor: '#9a9a9a',
+        tabBarInactiveTintColor: '#8d8d8d',
         tabBarIcon: ({ color, size, focused }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
+          let iconName = 'home';
 
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
           if (route.name === 'Scan') iconName = focused ? 'scan' : 'scan-outline';
           if (route.name === 'Results') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName as any} size={size} color={color} />;
         },
       })}
     >
