@@ -1,47 +1,42 @@
 # Wanda Tips Mobile
 
-A complete Expo mobile app starter for Wanda Tips built with React Native, navigation, auth flow, profile, prediction logic, and screenshot analysis integration.
+A stronger Expo mobile app foundation for Wanda Tips, with real app structure, secure local auth, AI scanning, and Supabase-ready configuration.
 
-## What is included
+## Features
 - Login and signup screens
-- Auth persistence using secure storage
-- User profile screen
-- Bankroll tracking and league selection
-- Fixture prediction dashboard
-- Screenshot upload and Gemini AI analysis
-- Dark sports app styling
-- Real API-ready service layer with demo fallback
-
-## Requirements
-- Node.js 18+
-- npm or yarn
-- Expo CLI
+- Session persistence with SecureStore and AsyncStorage
+- Profile screen and bankroll tracking
+- League-based prediction dashboard
+- Vision AI screenshot analysis via Gemini
+- Supabase-ready auth and profile integration
+- Demo fallback mode so the app still works without a backend
 
 ## Install
 npm install
 
-## Run the app
+## Run locally
 npm start
 
-Then launch:
-- Android emulator: npm run android
-- iOS simulator: npm run ios
+Android:
+npm run android
 
-## Environment variables
-Create a `.env` file if you plan to connect to a real backend or API:
+iOS:
+npm run ios
 
+## Environment setup
+Create a `.env` file and add:
+
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 EXPO_PUBLIC_API_URL=https://your-api-url.com
 EXPO_PUBLIC_GEMINI_API_KEY=your_key_here
 
+## Supabase setup
+Use the SQL in `supabase/schema.sql` to create the required tables and policies in your Supabase project.
+
+Then log in with the app using the Supabase auth flow. If you do not set the Supabase variables, the app automatically falls back to demo mode.
+
 ## Notes
-- The app is ready as a productive starter foundation.
-- If you connect a real backend later, replace the demo auth and data placeholders in `src/services/api.ts`.
-- The AI screenshot scan will work once a valid Gemini API key is supplied.
-
-## Recommended next step for a real app
-Connect this app to:
-- Supabase for auth, profile, and app data
-- A football odds API for live fixtures and odds
-- A real backend for saving scans/history
-
-This gives you a solid product base without starting from scratch.
+- The app is now backend-ready for real authentication and profile storage.
+- Live user data will work as soon as the Supabase config is added and the schema is created.
+- AI scan still requires a valid Gemini API key.

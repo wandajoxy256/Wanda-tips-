@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildPredictionResults } from './prediction';
 import { UserProfile } from '../types';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
 
@@ -28,42 +29,102 @@ async function request<T>(path: string, method = 'GET', body?: unknown, token?: 
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
-  try {
-    return await request<AuthResponse>('/auth/login', 'POST', { email, password });
-  } catch (error) {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    const user = data.user;
     return {
-      token: 'demo-token',
+      token: data.session?.access_token || 'supabase-session',
       user: {
-        id: 'demo-user',
-        name: 'Wanda User',
-        email,
-        plan: 'Pro',
-        favoriteLeague: 'ALL',
-        bankroll: 1000,
+        id: user.id,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Wanda User',
+        email: user.email || email,
+        plan: user.user_metadata?.plan || 'Pro',
+        favoriteLeague: user.user_metadata?.favoriteLeague || 'ALL',
+        bankroll: Number(user.user_metadata?.bankroll ?? 1000),
       },
     };
   }
+
+  return {
+    token: 'demo-token',
+    user: {
+      id: 'demo-user',
+      name: 'Wanda User',
+      email,
+      plan: 'Pro',
+      favoriteLeague: 'ALL',
+      bankroll: 1000,
+    },
+  };
 }
 
 export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
-  try {
-    return await request<AuthResponse>('/auth/register', 'POST', { name, email, password });
-  } catch (error) {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          plan: 'Pro',
+          favoriteLeague: 'ALL',
+          bankroll: 1000,
+        },
+      },
+    });
+
+    if (error) throw error;
+
+    const user = data.user;
     return {
-      token: 'demo-token',
+      token: data.session?.access_token || 'supabase-session',
       user: {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        plan: 'Pro',
-        favoriteLeague: 'ALL',
-        bankroll: 1000,
+        id: user.id,
+        name: user.user_metadata?.full_name || name,
+        email: user.email || email,
+        plan: user.user_metadata?.plan || 'Pro',
+        favoriteLeague: user.user_metadata?.favoriteLeague || 'ALL',
+        bankroll: Number(user.user_metadata?.bankroll ?? 1000),
       },
     };
   }
+
+  return {
+    token: 'demo-token',
+    user: {
+      id: `user-${Date.now()}`,
+      name,
+      email,
+      plan: 'Pro',
+      favoriteLeague: 'ALL',
+      bankroll: 1000,
+    },
+  };
 }
 
 export async function fetchLeagueFixtures(league: string, token?: string) {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.from('predictions').select('*').limit(5);
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          league: row.league || league,
+          fixture: row.fixture || 'Fixture',
+          pick: row.pick || 'Home Win (1)',
+          stakePercent: Number(row.stake_percent ?? 2.4),
+          stakeAmount: Number(row.stake_amount ?? 25),
+          confidence: Number(row.confidence ?? 72),
+          details: row.details || 'Live data synced',
+        }));
+      }
+    } catch (_error) {
+      // fallback below
+    }
+  }
+
   try {
     const data = await request<{ matches?: any[] }>('/sports/fixtures', 'POST', { league }, token);
     if (Array.isArray(data.matches) && data.matches.length > 0) {
@@ -78,7 +139,7 @@ export async function fetchLeagueFixtures(league: string, token?: string) {
         details: match.details ?? 'Value market detected',
       }));
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore and fall back to local model when no API is configured.
   }
 
