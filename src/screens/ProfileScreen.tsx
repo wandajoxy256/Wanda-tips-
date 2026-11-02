@@ -8,9 +8,9 @@ export default function ProfileScreen() {
   const { user, bankroll, logout, updateProfile } = useAppContext();
 
   const handleAddUnits = async () => {
-    if (!user) return;
-    await updateProfile({ bankroll: (user.bankroll || bankroll) + 100 });
-    Alert.alert('Profile updated', '100 units added to your bankroll.');
+    const updatedBankroll = bankroll + 100;
+    await updateProfile({ bankroll: updatedBankroll });
+    Alert.alert('Profile updated', `Your bankroll is now ${updatedBankroll.toLocaleString()} units.`);
   };
 
   const handleLogout = async () => {
@@ -71,10 +71,10 @@ const styles = StyleSheet.create({
   label: {
     color: '#00ffcc',
     fontSize: 11,
-    fontWeight: '700',
     letterSpacing: 1,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    marginTop: 8,
+    marginTop: 10,
     marginBottom: 4,
   },
   value: {

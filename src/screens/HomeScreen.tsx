@@ -1,55 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { useAppContext } from '../context/AppContext';
-import { fetchLeagueFixtures } from '../services/api';
 import { buildPredictionResults } from '../services/prediction';
+import LeagueSelector from '../components/LeagueSelector';
+import MetricCard from '../components/MetricCard';
 
 export default function HomeScreen() {
-  const { bankroll, selectedLeague, setResults, results, token, user } = useAppContext();
+  const { bankroll, selectedLeague, results, setResults, token, user } = useAppContext();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const run = async () => {
+    const load = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const fixtures = await fetchLeagueFixtures(selectedLeague, token ?? undefined);
-        await setResults(fixtures.length > 0 ? fixtures : buildPredictionResults(bankroll, selectedLeague));
+        const nextResults = buildPredictionResults(bankroll, selectedLeague);
+        await setResults(nextResults);
       } catch (error) {
-        await setResults(buildPredictionResults(bankroll, selectedLeague));
+        console.warn('Unable to refresh results', error);
       } finally {
         setLoading(false);
       }
     };
 
-    run();
-  }, [bankroll, selectedLeague, token]);
+    load();
+  }, [bankroll, selectedLeague]);
+
+  const topPick = results[0];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.greeting}>Hello, {user?.name || 'Coach'}</Text>
       <Text style={styles.title}>WANDA TIPS</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Bankroll</Text>
-        <Text style={styles.value}>{bankroll.toLocaleString()} units</Text>
+      <View style={styles.metricRow}>
+        <MetricCard label="Bankroll" value={`${bankroll.toLocaleString()} units`} />
+        <MetricCard label="Best pick" value={topPick ? topPick.pick : 'N/A'} accent />
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>League</Text>
-        <Text style={styles.value}>{selectedLeague}</Text>
-      </View>
+      <LeagueSelector />
 
-      <Pressable
-        style={styles.primaryButton}
-        onPress={() => Alert.alert('Scan ready', `Feasible market scan ready for ${selectedLeague}`)}
-      >
+      <Pressable style={styles.primaryButton} onPress={() => Alert.alert('Market scan', `Feasible market scan ready for ${selectedLeague}`)}>
         <Text style={styles.primaryButtonText}>{loading ? 'Scanning...' : 'Run Feasible Market Scan'}</Text>
       </Pressable>
 
       <View style={styles.infoCard}>
-        <Text style={styles.cardTitle}>Top recommendations</Text>
+        <Text style={styles.cardTitle}>Today’s top picks</Text>
         {results.length === 0 ? (
-          <Text style={styles.emptyText}>No picks yet. Run a scan to generate results.</Text>
+          <Text style={styles.emptyText}>No picks yet. Start your scan to generate recommendations.</Text>
         ) : (
           results.slice(0, 3).map((item, index) => (
             <View key={`${item.fixture}-${index}`} style={styles.pickBox}>
@@ -71,7 +68,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
   },
   greeting: {
-    color: '#d4d4d4',
+    color: '#d7d7d7',
     fontSize: 14,
     marginBottom: 6,
   },
@@ -83,33 +80,17 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 18,
   },
-  card: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#2a2a2a',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  label: {
-    color: '#7deed0',
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  value: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
+  metricRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
   },
   primaryButton: {
     backgroundColor: '#00b33c',
     borderRadius: 10,
     alignItems: 'center',
     paddingVertical: 14,
-    marginVertical: 16,
+    marginBottom: 16,
   },
   primaryButtonText: {
     color: '#fff',
@@ -125,10 +106,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: '#00ffcc',
+    fontSize: 14,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1,
     marginBottom: 12,
+    letterSpacing: 1,
   },
   emptyText: {
     color: '#d0d0d0',
