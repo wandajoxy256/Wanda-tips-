@@ -1,68 +1,157 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
 import { useAppContext } from '../context/AppContext';
-import BankrollCard from '../components/BankrollCard';
-import LeaguePicker from '../components/LeaguePicker';
-import ResultsPanel from '../components/ResultsPanel';
+import { fetchLeagueFixtures } from '../services/api';
 import { buildPredictionResults } from '../services/prediction';
 
 export default function HomeScreen() {
-  const { bankroll, selectedLeague, setResults, results } = useAppContext();
+  const { bankroll, selectedLeague, setResults, results, token, user } = useAppContext();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const generated = buildPredictionResults(bankroll, selectedLeague);
-    setResults(generated);
-  }, [bankroll, selectedLeague]);
+    const runPrediction = async () => {
+      try {
+        setLoading(true);
+        const fixtures = await fetchLeagueFixtures(selectedLeague, token ?? undefined);
+        const mapped = fixtures.length ? fixtures : buildPredictionResults(bankroll, selectedLeague);
+        await setResults(mapped);
+      } catch (error) {
+        const fallback = buildPredictionResults(bankroll, selectedLeague);
+        await setResults(fallback);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleScan = () => {
-    Alert.alert('Feasible Market Scan', `Bankroll: ${bankroll.toLocaleString()} units`);
-  };
+    runPrediction();
+  }, [bankroll, selectedLeague, token]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.greeting}>Hello, {user?.name ?? 'Coach'}</Text>
       <Text style={styles.title}>WANDA TIPS</Text>
 
-      <BankrollCard onSetPreset={(value) => console.log('preset', value)} />
-      <LeaguePicker />
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryLabel}>Bankroll</Text>
+        <Text style={styles.summaryValue}>{bankroll.toLocaleString()} units</Text>
+      </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleScan}>
-        <Text style={styles.primaryButtonText}>Run Feasible Market Scan</Text>
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryLabel}>League</Text>
+        <Text style={styles.summaryValue}>{selectedLeague}</Text>
+      </View>
+
+      <Pressable style={styles.primaryButton} onPress={() => Alert.alert('Scan run', `Feasible market scan ready for ${selectedLeague}`)}>
+        <Text style={styles.primaryButtonText}>{loading ? 'Scanning...' : 'Run Feasible Market Scan'}</Text>
       </Pressable>
 
-      <ResultsPanel results={results} />
+      <View style={styles.resultsCard}>
+        <Text style={styles.cardTitle}>Top recommendations</Text>
+        {results.length === 0 ? (
+          <Text style={styles.emptyText}>No picks yet. Click the scan button to generate recommendations.</Text>
+        ) : (
+          results.slice(0, 3).map((item, index) => (
+            <View key={`${item.fixture}-${index}`} style={styles.pickRow}>
+              <Text style={styles.fixtureText}>{item.fixture}</Text>
+              <Text style={styles.pickText}>{item.pick}</Text>
+              <Text style={styles.pickInfo}>{item.details}</Text>
+            </View>
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#121212',
+    minHeight: '100%',
+  },
+  greeting: {
+    color: '#d9d9d9',
+    fontSize: 14,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 30,
+    fontWeight: '900',
     textAlign: 'center',
     color: '#00ffcc',
-    marginBottom: 20,
+    letterSpacing: 2,
+    marginBottom: 18,
+  },
+  summaryCard: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#2a2a2a',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  summaryLabel: {
+    color: '#7deed0',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  summaryValue: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 20,
   },
   primaryButton: {
     backgroundColor: '#00b33c',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 16,
+    marginVertical: 16,
   },
   primaryButtonText: {
     color: '#fff',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  resultsCard: {
+    backgroundColor: '#191919',
+    borderColor: '#2b2b2b',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+  },
+  cardTitle: {
+    color: '#00ffcc',
+    fontWeight: '800',
+    fontSize: 15,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  emptyText: {
+    color: '#d0d0d0',
+    lineHeight: 22,
+  },
+  pickRow: {
+    backgroundColor: '#232323',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  fixtureText: {
+    color: '#fff',
     fontWeight: '700',
-    fontSize: 16,
+    marginBottom: 4,
+  },
+  pickText: {
+    color: '#00ff66',
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  pickInfo: {
+    color: '#d7d7d7',
+    fontSize: 12,
   },
 });

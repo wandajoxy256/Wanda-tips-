@@ -22,8 +22,8 @@ export default function ScanScreen() {
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
       allowsEditing: true,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
@@ -33,12 +33,12 @@ export default function ScanScreen() {
 
   const handleAnalyze = async () => {
     if (!apiKey.trim()) {
-      Alert.alert('Missing API Key', 'Add your Gemini API key first.');
+      Alert.alert('Missing API Key', 'Add your Gemini API key in the app first.');
       return;
     }
 
     if (!imageUri) {
-      Alert.alert('No image', 'Select a screenshot before scanning.');
+      Alert.alert('No image', 'Please select a screenshot before scanning.');
       return;
     }
 
@@ -47,13 +47,18 @@ export default function ScanScreen() {
       const response = await fetch(imageUri);
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+      });
+      const base64 = globalThis.btoa ? globalThis.btoa(binary) : '';
 
       const text = await analyzeImageWithGemini(base64, blob.type || 'image/jpeg', apiKey.trim());
       setAnalysisText(text);
-      Alert.alert('Vision Analysis Complete', `Bankroll: ${bankroll.toLocaleString()} units`);
+      Alert.alert('Vision analysis complete', `Bankroll: ${bankroll.toLocaleString()} units`);
     } catch (error: any) {
-      Alert.alert('Analysis Failed', error.message || 'Unknown error');
+      Alert.alert('Analysis failed', error.message || 'Unable to process screenshot');
     } finally {
       setLoading(false);
     }
@@ -61,32 +66,32 @@ export default function ScanScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Vision AI Analysis</Text>
+      <Text style={styles.title}>Vision AI Engine</Text>
 
       <View style={styles.card}>
         <Text style={styles.label}>Gemini API Key</Text>
         <TextInput
           style={styles.input}
-          placeholder="Paste Gemini API key"
-          placeholderTextColor="#6a6a6a"
-          secureTextEntry
           value={apiKey}
           onChangeText={setApiKey}
+          placeholder="Paste your Gemini API key"
+          placeholderTextColor="#6d6d6d"
+          secureTextEntry
         />
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Upload Match Screenshot</Text>
+        <Text style={styles.label}>Screenshot</Text>
         <Pressable style={styles.primaryButton} onPress={pickImage}>
-          <Text style={styles.primaryButtonText}>Choose Image</Text>
+          <Text style={styles.primaryButtonText}>Choose image</Text>
         </Pressable>
 
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
         ) : null}
 
-        <Pressable style={[styles.primaryButton, styles.secondaryButton]} onPress={handleAnalyze} disabled={loading}>
-          <Text style={styles.primaryButtonText}>{loading ? 'Analyzing...' : 'Scan Screenshot with Vision AI'}</Text>
+        <Pressable style={styles.secondaryButton} onPress={handleAnalyze} disabled={loading}>
+          <Text style={styles.primaryButtonText}>{loading ? 'Analyzing...' : 'Scan screenshot'}</Text>
         </Pressable>
       </View>
 
@@ -101,22 +106,24 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#121212',
+    minHeight: '100%',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#00ffcc',
+    fontSize: 28,
+    fontWeight: '900',
     textAlign: 'center',
+    color: '#00ffcc',
+    letterSpacing: 2,
     marginBottom: 18,
   },
   card: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 12,
+    backgroundColor: '#1c1c1c',
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
     borderColor: '#2a2a2a',
+    borderWidth: 1,
     marginBottom: 16,
   },
   label: {
@@ -128,13 +135,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#262626',
+    borderWidth: 1,
+    borderColor: '#333',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
     color: '#fff',
-    borderWidth: 1,
-    borderColor: '#333',
   },
   primaryButton: {
     backgroundColor: '#007acc',
@@ -145,7 +152,10 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#00b33c',
-    marginTop: 10,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
   },
   primaryButtonText: {
     color: '#fff',

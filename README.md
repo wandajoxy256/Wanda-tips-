@@ -1,37 +1,40 @@
-# Wanda Tips Mobile
+import React from 'react';
+import { View, Text } from 'react-native';
 
-A mobile app version of Wanda Tips built with Expo + React Native.
+export async function analyzeImageWithGemini(base64Image: string, mimeType: string, apiKey: string) {
+  const prompt = 'Analyze this football screenshot. Extract team names, odds, and provide a concise prediction summary. Return plain text.';
 
-## Features
-- Bankroll management
-- League selection (ALL, EPL, LaLiga, SerieA)
-- Feasible market scan logic
-- Screenshot upload using Expo Image Picker
-- Gemini Vision API integration
-- Dark-themed sports analytics UI
-- Persistent bankroll and API key storage
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
+        }],
+      }),
+    });
 
-## Getting started
+    const data = await response.json();
 
-1. Install dependencies:
-   npm install
+    if (!response.ok) {
+      throw new Error(data?.error?.message || 'Gemini request failed');
+    }
 
-2. Start the Expo app:
-   npm start
+    const text = data?.candidates?.[0]?.content?.parts?.find((part: any) => part.text)?.text;
+    return text || 'Vision analysis completed successfully.';
+  } catch (error: any) {
+    throw new Error(error.message || 'Gemini analysis failed');
+  }
+}
 
-3. Run on Android/iOS emulator or device:
-   - Android: npm run android
-   - iOS: npm run ios
-
-## Notes
-- The app uses a mock football database and a probability engine inspired by the original HTML version.
-- The Gemini API key is stored locally on the device and used only for screenshot analysis.
-- To use image analysis, add a valid Gemini API key in the Scan tab.
-
-## App structure
-- `App.tsx` – app shell and tab navigation
-- `src/screens` – Home, Scan, Results screens
-- `src/components` – reusable UI elements
-- `src/context/AppContext.tsx` – app state + local persistence
-- `src/services/gemini.ts` – Gemini API request builder
-- `src/services/prediction.ts` – odds/probability model
+export default function GeminiPreview() {
+  return (
+    <View>
+      <Text>Gemini API</Text>
+    </View>
+  );
+}

@@ -1,39 +1,23 @@
-export const analyzeImageWithGemini = async (base64Image: string, mimeType: string, apiKey: string) => {
-  const prompt = `Analyze this football match screenshot. Extract visible teams, 1X2 odds, total goals odds, and provide a concise report with the best feasible market and recommended stake based on bankroll. Return plain text only.`;
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Image,
-              },
-            },
-          ],
-        },
-      ],
-    }),
-  });
+export const predictionStyles = StyleSheet.create({
+  title: {
+    color: '#00ffcc',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  box: {
+    backgroundColor: '#191919',
+    borderRadius: 10,
+    padding: 12,
+  },
+});
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data?.error?.message || 'Unable to analyze screenshot');
-  }
-
-  const text = data?.candidates?.[0]?.content?.parts?.find((part: any) => part.text)?.text;
-
-  if (!text) {
-    throw new Error('No analysis returned from Gemini.');
-  }
-
-  return text;
-};
+export default function PredictionPreview() {
+  return (
+    <View style={predictionStyles.box}>
+      <Text style={predictionStyles.title}>Prediction Engine</Text>
+    </View>
+  );
+}

@@ -1,16 +1,23 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MatchFixture, PredictionResult } from '../types';
+import * as SecureStore from 'expo-secure-store';
+import { UserProfile, PredictionResult } from '../types';
 
 type AppContextType = {
+  isAuthenticated: boolean;
+  token: string | null;
+  user: UserProfile | null;
   bankroll: number;
   selectedLeague: string;
   apiKey: string;
   results: PredictionResult[];
-  setBankroll: (value: number) => void;
-  setSelectedLeague: (value: string) => void;
-  setApiKey: (value: string) => void;
-  setResults: (value: PredictionResult[]) => void;
+  setBankroll: (value: number) => Promise<void>;
+  setSelectedLeague: (value: string) => Promise<void>;
+  setApiKey: (value: string) => Promise<void>;
+  setResults: (value: PredictionResult[]) => Promise<void>;
+  login: (user: UserProfile, token: string) => Promise<void>;
+  logout: () => Promise<void>;
+  updateProfile: (payload: Partial<UserProfile>) => Promise<void>;
 };
 
 const STORAGE_KEYS = {
@@ -18,52 +25,50 @@ const STORAGE_KEYS = {
   league: '@wanda:league',
   apiKey: '@wanda:apiKey',
   results: '@wanda:results',
+  user: '@wanda:user',
+  token: '@wanda:token',
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [bankroll, setBankrollState] = useState(1000);
   const [selectedLeague, setSelectedLeagueState] = useState('ALL');
   const [apiKey, setApiKeyState] = useState('');
   const [results, setResultsState] = useState<PredictionResult[]>([]);
 
   useEffect(() => {
-    const loadPersisted = async () => {
+    const hydrate = async () => {
       try {
-        const [bankrollValue, leagueValue, keyValue, resultsValue] = await Promise.all([
+        const [bankrollValue, leagueValue, apiKeyValue, resultsValue, storedToken, storedUser] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.bankroll),
           AsyncStorage.getItem(STORAGE_KEYS.league),
           AsyncStorage.getItem(STORAGE_KEYS.apiKey),
           AsyncStorage.getItem(STORAGE_KEYS.results),
+          SecureStore.getItemAsync(STORAGE_KEYS.token),
+          AsyncStorage.getItem(STORAGE_KEYS.user),
         ]);
 
-        if (bankrollValue) {
-          setBankrollState(Number(bankrollValue) || 1000);
-        }
-
-        if (leagueValue) {
-          setSelectedLeagueState(leagueValue);
-        }
-
-        if (keyValue) {
-          setApiKeyState(keyValue);
-        }
-
-        if (resultsValue) {
-          setResultsState(JSON.parse(resultsValue) as PredictionResult[]);
-        }
+        if (bankrollValue) setBankrollState(Number(bankrollValue) || 1000);
+        if (leagueValue) setSelectedLeagueState(leagueValue);
+        if (apiKeyValue) setApiKeyState(apiKeyValue);
+        if (resultsValue) setResultsState(JSON.parse(resultsValue) as PredictionResult[]);
+        if (storedToken) setToken(storedToken);
+        if (storedUser) setUser(JSON.parse(storedUser) as UserProfile);
       } catch (error) {
-        console.warn('Unable to load app state', error);
+        console.warn('Unable to hydrate app state', error);
       }
     };
 
-    loadPersisted();
+    hydrate();
   }, []);
 
   const setBankroll = async (value: number) => {
-    setBankrollState(value);
-    await AsyncStorage.setItem(STORAGE_KEYS.bankroll, String(value));
+    const safeValue = Number.isFinite(value) && value > 0 ? value : 1000;
+    setBankrollState(safeValue);
+    await AsyncStorage.setItem(STORAGE_KEYS.bankroll, String(safeValue));
   };
 
   const setSelectedLeague = async (value: string) => {
@@ -81,8 +86,41 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.setItem(STORAGE_KEYS.results, JSON.stringify(value));
   };
 
+  const saveUser = async (nextUser: UserProfile | null) => {
+    setUser(nextUser);
+    if (nextUser) {
+      await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(nextUser));
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.user);
+    }
+  };
+
+  const login = async (nextUser: UserProfile, nextToken: string) => {
+    setUser(nextUser);
+    setToken(nextToken);
+    await SecureStore.setItemAsync(STORAGE_KEYS.token, nextToken);
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(nextUser));
+  };
+
+  const logout = async () => {
+    setToken(null);
+    setUser(null);
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.token);
+    await AsyncStorage.removeItem(STORAGE_KEYS.user);
+  };
+
+  const updateProfile = async (payload: Partial<UserProfile>) => {
+    if (!user) return;
+    const nextUser = { ...user, ...payload };
+    setUser(nextUser);
+    await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(nextUser));
+  };
+
   const value = useMemo<AppContextType>(
     () => ({
+      isAuthenticated: Boolean(token && user),
+      token,
+      user,
       bankroll,
       selectedLeague,
       apiKey,
@@ -91,8 +129,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       setSelectedLeague,
       setApiKey,
       setResults,
+      login,
+      logout,
+      updateProfile,
     }),
-    [bankroll, selectedLeague, apiKey, results],
+    [token, user, bankroll, selectedLeague, apiKey, results],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
